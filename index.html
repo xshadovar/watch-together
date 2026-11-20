@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Watch together</title>
+<style>
+:root{--bg:#f1f0fa;--card:#fff;--tx:#16142b;--mut:#625f7e;--ac:#4a35e8;--on:#fff;--ln:#dcd9f0;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e0d1c;--card:#18162e;--tx:#efedff;--mut:#9d99c4;--ac:#ffb43a;--on:#1d1300;--ln:#2c2950;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e0d1c;--card:#18162e;--tx:#efedff;--mut:#9d99c4;--ac:#ffb43a;--on:#1d1300;--ln:#2c2950;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--tx);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:480px;margin:0 auto;padding:20px}
+section{display:none}section.on{display:block}
+h1{font-size:2.6rem;line-height:1;letter-spacing:-.04em;margin:7vh 0 14px;font-weight:800}
+h2{margin:6px 0 14px;font-size:1.4rem;letter-spacing:-.02em}
+.sub,.fine{color:var(--mut)}
+.step{margin:20px 0 6px;font-weight:600}
+button{font:inherit;border:1px solid var(--ln);background:var(--card);color:var(--tx);border-radius:14px;padding:10px 12px;min-height:48px;cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible,.pick:focus-within{outline:3px solid var(--ac);outline-offset:2px}
+.big{display:block;width:100%;background:var(--ac);color:var(--on);border:0;font-weight:700;margin:10px 0}
+.big.alt{background:var(--card);color:var(--tx);border:1px solid var(--ln)}
+.link{background:none;border:0;color:var(--mut);padding:0;min-height:36px}
+.row{display:flex;gap:8px;margin:8px 0}.row button{flex:1}
+textarea{width:100%;height:92px;border:1px solid var(--ln);border-radius:12px;background:var(--card);color:var(--tx);padding:10px;font:12px/1.3 ui-monospace,Menlo,monospace;resize:none}
+.pick{display:block;border:2px dashed var(--ln);border-radius:16px;padding:22px;text-align:center;font-weight:600;cursor:pointer;word-break:break-all}
+.err{color:var(--ac);min-height:1.4em;margin:8px 0}
+#stage{position:relative;background:#000;border-radius:16px;overflow:hidden;aspect-ratio:16/9;max-height:62vh}
+#v{width:100%;height:100%;display:block;object-fit:contain;background:#000}
+#ov{position:absolute;inset:0;background:rgba(0,0,0,.84);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;text-align:center}
+#ov.off{display:none}
+#ov p{margin:0}
+.bar{width:70%;height:6px;background:rgba(255,255,255,.2);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--ac)}
+#start{width:auto;padding:12px 28px}
+.ctl{display:flex;gap:8px;align-items:center;margin:12px 0}
+.ctl button{flex:1}
+#tm{font-variant-numeric:tabular-nums;color:var(--mut);font-size:.85rem;min-width:84px;text-align:right}
+input[type=range]{flex:1;min-width:0;accent-color:var(--ac);height:32px}
+#pp{flex:1.5;background:var(--ac);color:var(--on);border:0;font-weight:700}
+#ctls.dis{pointer-events:none;opacity:.45}
+</style>
+</head>
+<body>
+<main>
+
+<section id="home" class="on">
+  <h1>Press pause once. Both phones stop.</h1>
+  <p class="sub">Send an MP4 straight to a friend’s phone and watch it together. Play, pause, seek, speed and volume stay in sync on both screens.</p>
+  <button class="big" id="bHost">Share a video</button>
+  <button class="big alt" id="bJoin">Join a friend’s video</button>
+  <p class="fine">No account and no upload. The video goes phone to phone.</p>
+</section>
+
+<section id="host">
+  <button class="link" data-back>Back</button>
+  <h2>Share a video</h2>
+  <label class="pick"><input type="file" id="file" accept="video/mp4,video/*" hidden><span id="fname">1. Choose an MP4 from your phone</span></label>
+  <div id="hcode" hidden>
+    <p class="step">2. Send this code to your friend</p>
+    <textarea id="offer" readonly></textarea>
+    <div class="row"><button data-c="#offer">Copy</button><button data-s="#offer">Send</button></div>
+    <p class="step">3. Paste the reply code they send back</p>
+    <textarea id="ans" placeholder="Paste reply code here"></textarea>
+    <button class="big" id="go">Connect</button>
+  </div>
+  <p class="err" id="herr"></p>
+</section>
+
+<section id="join">
+  <button class="link" data-back>Back</button>
+  <h2>Join a friend’s video</h2>
+  <p class="step">1. Paste the code your friend sent you</p>
+  <textarea id="in" placeholder="Paste code here"></textarea>
+  <button class="big" id="mk">Create reply code</button>
+  <div id="rbox" hidden>
+    <p class="step">2. Send this reply code back to your friend</p>
+    <textarea id="reply" readonly></textarea>
+    <div class="row"><button data-c="#reply">Copy</button><button data-s="#reply">Send</button></div>
+    <p class="fine">Keep this page open. The video starts arriving as soon as your friend connects.</p>
+  </div>
+  <p class="err" id="jerr"></p>
+</section>
+
+<section id="play">
+  <div id="stage">
+    <video id="v" playsinline preload="auto"></video>
+    <div id="ov"><p id="ovt">Connecting…</p><div class="bar"><i id="pg"></i></div><button class="big" id="start" hidden>Tap to start watching</button></div>
+  </div>
+  <div id="ctls" class="dis">
+    <div class="ctl"><input id="sk" type="range" min="0" max="1" step="any" value="0" aria-label="Seek"><span id="tm">0:00 / 0:00</span></div>
+    <div class="ctl"><button id="b10">−10</button><button id="pp">Play</button><button id="f10">+10</button><button id="sp">1×</button><button id="fs">Full</button></div>
+    <div class="ctl"><button id="mu">Mute</button><input id="vol" type="range" min="0" max="1" step=".05" value="1" aria-label="Volume"></div>
+  </div>
+  <p class="fine">Either of you can control playback. iPhones keep volume on the side buttons, but mute stays in sync.</p>
+</section>
+
+</main>
+<script>
+const $=s=>document.querySelector(s),v=$("#v");
+let pc,dc,host=false,file,parts=[],meta,got=0,ready=false,sup=0,drag=false;
+const show=id=>document.querySelectorAll("section").forEach(s=>s.classList.toggle("on",s.id===id));
+const fmt=s=>{s=Math.max(0,s|0);return(s/60|0)+":"+String(s%60).padStart(2,"0")};
+const enc=d=>btoa(JSON.stringify(d)),dec=s=>JSON.parse(atob(s.replace(/\s/g,"")));
+
+/* ---- connection (manual code swap, no server) ---- */
+const mk=()=>{pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"}]});
+  pc.onconnectionstatechange=()=>{if(["failed","closed"].includes(pc.connectionState))lost()}};
+const gather=()=>new Promise(r=>{if(pc.iceGatheringState==="complete")return r();
+  const t=setTimeout(r,5000);
+  pc.addEventListener("icegatheringstatechange",()=>{if(pc.iceGatheringState==="complete"){clearTimeout(t);r()}})});
+function lost(){ready=false;$("#ctls").classList.add("dis");$("#start").hidden=true;$("#ov").classList.remove("off");$("#ovt").textContent="Connection lost. Reload the page to reconnect.";v.pause()}
+function setup(c){dc=c;c.binaryType="arraybuffer";c.bufferedAmountLowThreshold=1e6;
+  c.onopen=()=>{show("play");$("#ovt").textContent=host?"Sending video… 0%":"Receiving video… 0%";if(host){v.src=URL.createObjectURL(file);sendFile()}};
+  c.onclose=lost;c.onmessage=onmsg}
+
+$("#bHost").onclick=()=>show("host");
+$("#bJoin").onclick=()=>show("join");
+document.querySelectorAll("[data-back]").forEach(b=>b.onclick=()=>location.reload());
+
+$("#file").onchange=async e=>{
+  file=e.target.files[0];if(!file)return;
+  $("#fname").textContent=file.name;host=true;$("#herr").textContent="";
+  try{mk();setup(pc.createDataChannel("v"));
+    await pc.setLocalDescription(await pc.createOffer());await gather();
+    $("#offer").value=enc(pc.localDescription);$("#hcode").hidden=false}
+  catch(x){$("#herr").textContent="Could not start sharing: "+x.message}
+};
+$("#go").onclick=async()=>{
+  try{await pc.setRemoteDescription(dec($("#ans").value));$("#herr").textContent="Connecting…"}
+  catch(x){$("#herr").textContent="That reply code doesn’t look right. Paste the whole code."}
+};
+$("#mk").onclick=async()=>{
+  try{host=false;mk();pc.ondatachannel=e=>setup(e.channel);
+    await pc.setRemoteDescription(dec($("#in").value));
+    await pc.setLocalDescription(await pc.createAnswer());await gather();
+    $("#reply").value=enc(pc.localDescription);$("#rbox").hidden=false;$("#jerr").textContent=""}
+  catch(x){$("#jerr").textContent="That code doesn’t look right. Paste the whole code."}
+};
+document.querySelectorAll("[data-c]").forEach(b=>b.onclick=async()=>{
+  const t=$(b.dataset.c);t.select();
+  try{await navigator.clipboard.writeText(t.value)}catch(_){document.execCommand("copy")}
+  b.textContent="Copied";setTimeout(()=>b.textContent="Copy",1500)});
+document.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{
+  const t=$(b.dataset.s).value;
+  navigator.share?navigator.share({title:"Watch together code",text:t}).catch(()=>{}):b.previousElementSibling.click()});
+
+/* ---- file transfer ---- */
+function prog(f){$("#pg").style.width=f*100+"%";$("#ovt").textContent=(host?"Sending":"Receiving")+" video… "+Math.round(f*100)+"%"}
+async function sendFile(){
+  dc.send(JSON.stringify({t:"meta",name:file.name,size:file.size,type:file.type||"video/mp4"}));
+  for(let o=0;o<file.size;o+=262144){
+    const b=await file.slice(o,o+262144).arrayBuffer();
+    for(let i=0;i<b.byteLength;i+=16384){
+      if(dc.bufferedAmount>4e6)await new Promise(r=>{dc.onbufferedamountlow=()=>{dc.onbufferedamountlow=null;r()}});
+      dc.send(b.slice(i,i+16384))}
+    prog(Math.min(o+262144,file.size)/file.size)}
+  dc.send(JSON.stringify({t:"end"}));
+  $("#ovt").textContent="Sent. Waiting for your friend to tap start…"}
+
+/* ---- sync ---- */
+const go=()=>{ready=true;$("#ov").classList.add("off");$("#ctls").classList.remove("dis");syncUI()};
+function onmsg(e){
+  if(typeof e.data!=="string"){parts.push(e.data);got+=e.data.byteLength;prog(got/meta.size);return}
+  const m=JSON.parse(e.data);
+  if(m.t==="meta"){meta=m;parts=[];got=0;return}
+  if(m.t==="end"){v.src=URL.createObjectURL(new Blob(parts,{type:meta.type}));parts=[];
+    $("#ovt").textContent="Ready: "+meta.name;$("#pg").style.width="100%";$("#start").hidden=false;return}
+  if(m.t==="ready"){go();return}
+  if(!ready)return;
+  const ap=f=>{sup=Date.now()+400;f()};
+  if(m.t==="play")ap(()=>{v.currentTime=m.time;v.play().catch(()=>{})});
+  else if(m.t==="pause")ap(()=>{v.pause();v.currentTime=m.time});
+  else if(m.t==="seek")ap(()=>{v.currentTime=m.time});
+  else if(m.t==="vol")ap(()=>{v.volume=m.v;v.muted=m.m});
+  else if(m.t==="rate")ap(()=>{v.playbackRate=m.r});
+  else if(m.t==="tick"){
+    if(Math.abs(v.currentTime-m.time)>.7)ap(()=>{v.currentTime=m.time});
+    if(m.p&&v.paused)ap(()=>v.play().catch(()=>{}));
+    if(!m.p&&!v.paused)ap(()=>v.pause())}
+  syncUI()}
+$("#start").onclick=async()=>{
+  sup=Date.now()+1500;
+  try{await v.play();v.pause();v.currentTime=0}catch(_){}
+  dc.send(JSON.stringify({t:"ready"}));go()};
+setInterval(()=>{if(host&&ready&&dc&&dc.readyState==="open")dc.send(JSON.stringify({t:"tick",time:v.currentTime,p:!v.paused}))},2000);
+
+const tx=m=>{if(Date.now()<sup||!ready||!dc||dc.readyState!=="open")return;dc.send(JSON.stringify(m))};
+v.addEventListener("play",()=>tx({t:"play",time:v.currentTime}));
+v.addEventListener("pause",()=>tx({t:"pause",time:v.currentTime}));
+v.addEventListener("seeked",()=>tx({t:"seek",time:v.currentTime}));
+v.addEventListener("volumechange",()=>tx({t:"vol",v:v.volume,m:v.muted}));
+v.addEventListener("ratechange",()=>tx({t:"rate",r:v.playbackRate}));
+
+/* ---- controls ---- */
+function syncUI(){
+  $("#pp").textContent=v.paused?"Play":"Pause";
+  $("#sp").textContent=v.playbackRate+"×";
+  $("#mu").textContent=v.muted||v.volume===0?"Unmute":"Mute";
+  $("#vol").value=v.volume;
+  if(!drag){$("#sk").value=v.currentTime;$("#tm").textContent=fmt(v.currentTime)+" / "+fmt(v.duration||0)}}
+["timeupdate","play","pause","volumechange","ratechange","loadedmetadata"].forEach(n=>v.addEventListener(n,syncUI));
+v.addEventListener("loadedmetadata",()=>$("#sk").max=v.duration);
+v.onclick=()=>ready&&$("#pp").click();
+$("#pp").onclick=()=>v.paused?v.play():v.pause();
+$("#b10").onclick=()=>v.currentTime=Math.max(0,v.currentTime-10);
+$("#f10").onclick=()=>v.currentTime=Math.min(v.duration||0,v.currentTime+10);
+$("#sp").onclick=()=>{const r=[1,1.25,1.5,2,.75];v.playbackRate=r[(r.indexOf(v.playbackRate)+1)%r.length]};
+$("#mu").onclick=()=>v.muted=!v.muted;
+$("#vol").oninput=e=>{v.volume=+e.target.value;v.muted=false};
+$("#sk").oninput=()=>{drag=true;$("#tm").textContent=fmt($("#sk").value)+" / "+fmt(v.duration)};
+$("#sk").onchange=()=>{v.currentTime=+$("#sk").value;drag=false};
+$("#fs").onclick=()=>{const s=$("#stage"),f=s.requestFullscreen||s.webkitRequestFullscreen;
+  f?f.call(s):v.webkitEnterFullscreen&&v.webkitEnterFullscreen()};
+</script>
+</body>
+</html>
